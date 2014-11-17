@@ -200,7 +200,35 @@ dev.off()
 
 
 # Question 2: Genes that are consistent across all brain regions
+# Goal: to make a plot across time that shows gene expression for each gene at timepoint
+# Let's break apart data by gene!
+uniquegenes = unique(ts$genes)
+asd_genes = list()
+for (u in uniquegenes) {
+  asd_genes[[u]] = Z[which(ts$genes==u),]
+}
 
+# Save our progress
+asd = list(timeseries_raw = ts$timeseries,genes=ts$genes,timeseries_z = Z,regions_z = asd_regions, genes_z=asd_genes, regions=regions)
+save(asd,file="asd_ts_7136.Rda")
+
+# For each gene, plot across development
+pdf("asd_gene_patterns.pdf",onefile=TRUE,width=12)
+colors = sample(colours(),length(unique(regions)))
+for (gene in names(asd_genes)){
+  tmp = asd_genes[[gene]]
+  plot(tmp[1,],col=colors[1],pch=19,ylab="rna-seq expression",xaxt="n",main=paste("normalized expression for ",gene),xlab="age")
+  axis(1,labels=colnames(tmp),at=seq(1,length(colnames(tmp)))) 
+  for (o in 2:nrow(tmp)) {
+    points(tmp[o,], col = colors[o],pch=19)
+  }
+  legend(0,max(tmp),regions,lty=c(1,1),lwd=c(2.5,2.5),col=colors,cex=.6)
+}
+dev.off()
+
+
+
+# For each gene, plot across development
 
 # Question 3: Genes moving together within each timepoint
 
