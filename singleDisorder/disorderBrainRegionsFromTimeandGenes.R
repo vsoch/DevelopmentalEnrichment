@@ -90,7 +90,7 @@ for (gene in unique(ts$genes)){
 }
 dev.off()
 
-# STOPPED HERE!
+
 # Questions from the above:
 # What (different) genes move together within a single brain region?
 # What single genes are the same across all brain regions (and why??)
@@ -227,30 +227,55 @@ for (gene in names(asd_genes)){
 dev.off()
 
 
+# What genes move together within a single timepoint during development?
 
 # For each gene, plot across development
 
 # Question 3: Genes moving together within each timepoint
+# This is pretty simple - now we will cluster genes within timepoints. In this case we would map region on as color
 
-# Let's try a simple clustering!
-heat = pheatmap(Z)
+asd_timepoints = list()
+uniquetimepoints = colnames(ts$timeseries)
+for (u in uniquetimepoints){
+  # Let's make a matrix of regions by genes
+  mat = array(dim=c(length(unique(ts$genes)),length(regions)))
+  rownames(mat) = unique(ts$genes)
+  colnames(mat) = regions
+  # Now fill in
+  for (t in 1:nrow(mat)){
+    gene = rownames(mat)[t]
+    mat[gene,] = Z[which(ts$genes==gene),u]
+  }
+  asd_timepoints[[u]] = mat
+}
 
+# Save our progress
+asd = list(timeseries_raw = ts$timeseries,genes=ts$genes,timeseries_z = Z,regions_z = asd_regions, genes_z=asd_genes, regions=regions, timepoints = asd_timepoints)
+save(asd,file="asd_ts_7136.Rda")
 
+# Now again, let's try different clustering
+# Are there regions with similar expression in a timepoint, and how
+# does this change over time?
+
+pdf("asd_timepoint_clusters.pdf",onefile=TRUE,width=6)
+for (u in uniquetimepoints){
+  tmp = asd_timepoints[[u]]
+  plot(hclust(dist(t(tmp))),main=paste("Which regions have similar rna-seq for timepoint",u,"?"),xlab="",sub="")
 }
 dev.off()
 
 
-stopped here -
-get annotations - cell type = something relevant to genes
-cluster and label WITH those labels
-write about
+# DO we want to try WCGNA?
+powers = c(seq(4,10,by=1),seq(12,20,by=2))
+powerTables = vector(mode="list",length=1)
+powerTables[[1]] = list(data=pickSoftThreshold(t(mat),powerVector=powers,verbose=2)[[2]])
 
-# Here are the timeseries features
-feature
+colors = c("black","red")
+plotCols = c(2,5,6,7)
+colNames = c("Scale Free Topology Model Fit","Mean Connectivity","Median Connectivity","Max Connectivity")
 
-# Iterpolate missing points
-
-# What are the paterns?
-
-names(mala)[grep("infl",tolower(names(mala)))]
-
+ylim = matrix(NA,nrow=2,ncol=4)
+for (col in 1:length(plotCols)){
+  ylim[1,col] = min(ylim[1,col],powerTables[[1]]$data[,plotCols[col]],na.rm=TRUE)
+  ylim[2,col] = min(ylim[2,col],powerTables[[1]]$data[,plotCols[col]],na.rm=TRUE)
+}
