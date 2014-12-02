@@ -7,8 +7,8 @@
 load("timeseries_featurematrix.Rda")
 load("timeseries_genes_list.Rda")
 load("genes_47808_timeseries.Rda")
+load("interpolated_timeseries.Rda")
 tgenes = genes
-
 
 load("/scratch/PI/dpwall/DATA/ALLEN-BRAIN/DEVELOPING/interpolated_timeseries.Rda")
 # Let's load the disorder gene lists
@@ -27,22 +27,19 @@ for (g in gen) {
   asd_genes = c(asd_genes,strsplit(g,"[(]")[[1]][1])
 }
 
-# Now let's find these genes in the developmental data
-# Which ones are missing?
-missing = asd_genes[-which(asd_genes %in% tgenes)]
 
-# Manually fix gene names, yuck
-missing[10] = "HOXB"
-missing[11] = "HOXD"
-missing[18] = "PCDHA"
-
+# Here are highly validated ASD genes from 
+# http://www.nature.com/nature/journal/v515/n7526/fig_tab/nature13772_T1.html
+# (look in supplementary tables for 108 genes)
+# http://www.nature.com/nature/journal/v515/n7526/full/nature13908.html#tables
+asd_genes = c("ADNP","ANK2","ARID1B","CHD8","CUL3","DYRK1A","GRIN2B","KATNAL2","POGZ","SCN2A","SUV420H1","SYNGAP1","TBR1","ASXL3","BCL11A","CACNA2D3","MLL3","ASH1L","CTTNBP2","GABRB3","PTEN","RELN","APH1A","CD42BPB","ETFB","NAA15","MYO9B","MYT1L","NR3C2","SETD5","TRIO","MIB1","VIL1","SCN2A","SYNGAP1","CHD8","ARID1B","ANK2","SUV420H1","DYRK1A","GRIN2B","ADNP","TBR1","POGZ","CUL3","KATNAL2","BCL11A","CACNA2D3","MIB1","GABRB3","KMT2C","PTEN","RELN","ASXL3","MYO9B","ETFB","ASH1L","TRIO","NAA15","MYT1L","NR3C2","APH1A","VIL1","CDC42BPB","BIRC6","GALNTL4","MTMR12","EP400","ZNF774","DPP3","FCRL6","SMURF1","TTLL3","UTP6","CARKD","DNAH10","PPM1D","JADE2","S100G","GSE1","CSNK1E","KIAA0100","CACNA1D","RAB2A","PCOLCE","MYOC","SLCO1B1","SLC6A1","ATP1B1","SCARA3","KRT34","BRWD1","PRPF39","SIX2","CCSER1","GGNBP2","NRXN1","WHSC1","KLC1","RANBP17","LEO1","PTPRM","KDM4B","SETBP1","SRPK2","ZNF559","CSDE1","JUP","QRICH1","GSDMC","AGAP2","PLA1A","HDLBP","TGM1","LRRC14","KDM3A","C11orf30","TAF4","TCTE3","CERS4","TCF3","SLCO1B3","CD163L1","NCKAP1","CSTF2T","BRSK2","MYH10","STXBP5","SHANK3","AXL","IQGAP2","UBN2","KDM6B","CAPN12")
 # Do we want to add these? Maybe not...
-contenders = c()
-for (g in missing){
-  tmp = tgenes[grep(g,tgenes)]
-  cat("GENE IS",g,"\nCONTENDERS:",tmp,"\n")
-  contenders = c(contenders,tmp)
-}
+#contenders = c()
+#for (g in missing){
+#  tmp = tgenes[grep(g,tgenes)]
+#  cat("GENE IS",g,"\nCONTENDERS:",tmp,"\n")
+#  contenders = c(contenders,tmp)
+#}
 
 final_genes = interpolated$genes[which(interpolated$genes %in% asd_genes)]
 
@@ -55,7 +52,17 @@ ts = list(timeseries=subset,genes=final_genes)
 save(ts,file="/scratch/users/vsochat/DATA/ALLEN/NeuroDisorder/genelists/Autism_timeseries_subset_446.Rda")
 
 # Let's take a look at the timecourses
-load("/home/vanessa/Documents/Dropbox/Code/R/DevelopmentEnrichment/data/Autism_timeseries_subset_446.Rda")
+load("/home/vanessa/Documents/Dropbox/Code/R/DevelopmentEnrichment/data/Autism_timeseries_subset_100.Rda")
+
+# Let's get annotations for these genes - it would be helpful to break the
+# into groups first
+functional_annot = read.csv("/home/vanessa/Documents/Dropbox/Code/R/DevelopmentEnrichment/data/asd100/functional_annotation.tsv",sep="\t",head=TRUE)
+
+# KEGG
+functional_annot$KEGG_PATHWAY
+functional_annot$OMIM_DISEASE
+functinoal_annot$SP_PIR_KEYWORDS
+# Think about how to include this
 
 # Libraries for visualizations, scree plot
 library(qgraph)
@@ -76,9 +83,9 @@ colors = sample(colors(),16)
 
 # Ok, first let's plot the normalized timeseries for each gene
 setwd("/home/vanessa/Documents/Dropbox/Code/R/DevelopmentEnrichment/data")
-pdf("asd_timeseries_zscore_genes_446.pdf",onefile=TRUE)
+pdf("asd_timeseries_noz_genes_100.pdf",onefile=TRUE)
 for (gene in unique(ts$genes)){
-  tmp = Z[wyhich(ts$genes == gene),]
+  tmp = Z[which(ts$genes == gene),]
   plot(tmp[1,],type="l",col=colors[1],lwd=5,ylab="rna-seq expression",xaxt="n",main=paste("normalized expression for ",gene),xlab="age")
   axis(1,labels=colnames(Z),at=seq(1,length(colnames(Z))))
   for (o in 2:nrow(tmp)){
@@ -210,14 +217,14 @@ for (u in uniquegenes) {
 
 # Save our progress
 asd = list(timeseries_raw = ts$timeseries,genes=ts$genes,timeseries_z = Z,regions_z = asd_regions, genes_z=asd_genes, regions=regions)
-save(asd,file="asd_ts_7136.Rda")
+save(asd,file="asd_ts_1600.Rda")
 
 # For each gene, plot across development
-pdf("asd_gene_patterns.pdf",onefile=TRUE,width=12)
+pdf("asd_gene_patterns_noz.pdf",onefile=TRUE,width=12)
 colors = sample(colours(),length(unique(regions)))
 for (gene in names(asd_genes)){
   tmp = asd_genes[[gene]]
-  plot(tmp[1,],col=colors[1],pch=19,ylab="rna-seq expression",xaxt="n",main=paste("normalized expression for ",gene),xlab="age")
+  plot(tmp[1,],col=colors[1],pch=19,ylab="rna-seq expression",xaxt="n",main=paste("raw expression for ",gene),xlab="age")
   axis(1,labels=colnames(tmp),at=seq(1,length(colnames(tmp)))) 
   for (o in 2:nrow(tmp)) {
     points(tmp[o,], col = colors[o],pch=19)
@@ -251,7 +258,7 @@ for (u in uniquetimepoints){
 
 # Save our progress
 asd = list(timeseries_raw = ts$timeseries,genes=ts$genes,timeseries_z = Z,regions_z = asd_regions, genes_z=asd_genes, regions=regions, timepoints = asd_timepoints)
-save(asd,file="asd_ts_7136.Rda")
+save(asd,file="asd_ts_1600.Rda")
 
 # Now again, let's try different clustering
 # Are there regions with similar expression in a timepoint, and how
